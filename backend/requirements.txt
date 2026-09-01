@@ -1,0 +1,37 @@
+# 后端外壳依赖（随文章累进）
+# 与上层 CLI 版 requirements.txt 分开管理，但复用 CLI 版的 Agent 逻辑时需引入对应包
+
+# ── Web 框架（01.md 起）──
+fastapi>=0.110.0
+uvicorn[standard]>=0.27.0
+pydantic>=2.6.0
+
+# ── 配置 ──
+python-dotenv>=1.0.0
+
+# ── Agent 逻辑复用（02.md 起：backend 通过 agent_bridge 调 CLI 版 src/）──
+langchain>=0.3.0
+langchain-community>=0.3.0
+langchain-openai>=0.2.0
+langchain-chroma>=0.1.0
+langchain-cohere>=0.2.0
+chromadb>=0.5.0
+rank-bm25>=0.2.2
+cohere>=5.0.0
+langgraph>=0.2.0
+langgraph-checkpoint-sqlite>=2.0.0
+
+# ── 数据库（03.md 起：PostgreSQL + SQLAlchemy 2.0 异步 + Alembic 迁移）──
+sqlalchemy>=2.0.0
+asyncpg>=0.29.0
+alembic>=1.13.0
+
+# ── 缓存（04.md 起：Redis 异步客户端 redis.asyncio）──
+redis>=5.0.0
+
+# ── 消息队列（05.md 起：Celery 异步任务，Agent 推理异步化）──
+celery>=5.3.0
+
+# ── 后续文章会追加（此处先注释，学到再加）──
+# 07.md: python-jose>=3.3.0, passlib[bcrypt]>=1.7.4
+# 09.md: opentelemetry-api, opentelemetry-instrumentation-fastapi, prometheus-client
