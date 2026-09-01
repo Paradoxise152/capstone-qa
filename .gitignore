@@ -1,0 +1,40 @@
+# ── Byte-compiled / optimized / DLL files ──
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# ── Virtual environments ──
+.venv/
+venv/
+env/
+ENV/
+
+# ── Environment variables (保留 .env.example) ──
+.env
+.env.*
+!.env.example
+
+# ── 内部教学文档（不进入简历仓库展示）──
+teach.md
+**/teach.md
+
+# ── Database / runtime data ──
+*.sqlite
+*.sqlite3
+*.db
+logs/
+*.log
+
+# ── Test / lint / coverage cache ──
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# ── IDE / OS ──
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

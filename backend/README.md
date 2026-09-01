@@ -1,49 +1,71 @@
-# capstone-enterprise-qa / backend —— 后端外壳（服务端方向 L2 咬合）
+# Capstone Backend —— 企业知识库 Agent 的 Web 服务层
 
-> 本子目录是「服务端工程与系统设计」方向的 L2 累进项目，给上层 CLI 版 Agent 系统加"后端外壳"。
-> 学完 10 个服务端概念后，CLI 版 `capstone-enterprise-qa` 将升级为**全栈 AI 客服系统**。
+基于 **FastAPI** 构建的异步 Web 服务层，将 CLI 版多 Agent 系统封装为 RESTful API，并逐步引入 Redis 缓存、PostgreSQL 持久化与 Celery 异步任务等生产级能力。
 
-## 与 CLI 版的关系
+## ✨ 当前能力
 
-```
-capstone-enterprise-qa/
-├── src/                # CLI 版 Agent 系统（AI 主方向产物，保留不动）
-├── data/               # 知识库与测试数据（共享）
-├── eval/               # openevals 评估（共享）
-└── backend/            # ← 本目录：服务端方向后端外壳
-    ├── README.md       # 本文件
-    ├── requirements.txt
-    ├── .env.example
-    └── src/
-        ├── main.py     # FastAPI 入口（随文章累进）
-        └── ...
-```
+- **对话 API**：`POST /api/v1/chat` 调用 Supervisor 多 Agent 系统，返回答案与路由信息
+- **Redis Cache-Aside 缓存**：热点知识问答缓存 + TTL 随机抖动防雪崩，节省 LLM 调用与 Token
+- **幂等创建**：工单创建支持 `Idempotency-Key`，防止重复提交
+- **会话历史**：基于 LangGraph Checkpointer 读取多轮对话上下文
+- **异步任务**：Celery 异步化长时 Agent 推理（`task_id` 轮询模式）
+- **健康检查**：`GET /health`（K8s Probe 预留）
 
-- CLI 入口（`src/main.py`）保留，AI 主方向调试用
-- 后端入口（`backend/src/main.py`）随服务端方向文章累进，最终成为 Web 服务入口
+## 🛠️ 技术栈
 
-## 学习累进路线（10 个服务端概念 → 10 层后端外壳）
+| 层 | 技术选型 |
+|----|---------|
+| Web 框架 | FastAPI + Uvicorn（ASGI 异步） |
+| 数据库 | SQLAlchemy 2.0（async）+ asyncpg + Alembic |
+| 缓存 | Redis（Cache-Aside + TTL 抖动） |
+| 任务队列 | Celery + Redis broker |
+| Agent 逻辑 | LangGraph（经 `agent_bridge` 复用 CLI 版 `src/`） |
 
-| # | 服务端概念 | 给 Capstone 加的后端外壳层 | 对应文章 |
-|---|-----------|---------------------------|---------|
-| 1 | HTTP 协议与 API 设计 | 设计 Agent 服务的 RESTful API 契约 | `01.md` |
-| 2 | FastAPI + asyncio | 把 Supervisor 路由包装成异步 Web 服务 | `02.md` |
-| 3 | PostgreSQL + SQLAlchemy | 工单数据持久化到 PostgreSQL | `03.md` |
-| 4 | Redis + MongoDB | 缓存热点检索结果、会话短期记忆 | `04.md` |
-| 5 | Celery + 消息队列 | 多步 Agent 推理任务异步化 | `05.md` |
-| 6 | SSE / WebSocket | 流式返回 Agent 推理过程 | `06.md` |
-| 7 | JWT / OAuth2 / RBAC | API 鉴权，区分用户/客服/管理员 | `07.md` |
-| 8 | 网关 / 限流 / 熔断 | 限流防 LLM API 被刷爆、熔断降级 | `08.md` |
-| 9 | 可观测性 + 性能调优 | Prometheus 监控 P99、Token 消耗 | `09.md` |
-| 10 | Docker / K8s / CI/CD | 容器化全栈、CI 跑评估、金丝雀发布 | `10.md` |
+## 📡 API 概览
 
-## 运行（当前仅骨架，01.md 后可跑）
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/health` | 健康检查 |
+| POST | `/api/v1/chat` | 对话（热点缓存 + 调 Agent） |
+| GET | `/api/v1/history/{thread_id}` | 会话历史 |
+| POST | `/api/v1/tickets` | 创建工单（幂等） |
+| GET | `/api/v1/tickets` | 工单列表 |
+| POST | `/api/v1/chat/async` | 异步对话（Celery，返回 `task_id`） |
+| GET | `/api/v1/chat/tasks/{task_id}` | 异步任务状态轮询 |
+
+> 注：`async` 系列接口随异步任务能力逐步完善。
+
+## 🚀 快速开始
 
 ```bash
 cd backend
-uv venv && source .venv/bin/activate
-uv pip install -r requirements.txt
-cp .env.example .env  # 填入 OPENAI_API_KEY 等
-python src/main.py
-# 或：uvicorn src.main:app --reload
+# Windows：py -3.12 -m venv .venv && .venv\Scripts\activate
+# macOS / Linux：python3.12 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+
+cp .env.example .env   # 填入 OPENAI_API_KEY 等
+
+# 开发模式（热重载）
+uvicorn src.main:app --reload
 ```
+
+## 📁 目录结构
+
+```
+backend/
+├── src/
+│   ├── main.py          # FastAPI 入口与路由
+│   ├── agent_bridge.py  # 桥接 CLI 版 LangGraph Agent
+│   ├── cache.py         # Redis 缓存（Cache-Aside + 幂等）
+│   ├── database.py      # SQLAlchemy 异步引擎
+│   ├── models.py        # ORM 模型（Ticket 等）
+│   ├── tasks.py         # Celery 异步任务
+│   └── deps.py          # 依赖注入
+├── requirements.txt
+└── .env.example
+```
+
+## 🔗 与 CLI 版关系
+
+本服务层复用 CLI 版（`src/`）的多 Agent 系统与 RAG 管线，通过 `agent_bridge.py` 以异步方式调用 Supervisor 图，实现"CLI 能力 → Web API"的封装升级。
+

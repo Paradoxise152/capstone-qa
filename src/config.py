@@ -5,10 +5,10 @@ load_dotenv()
 
 # ── LLM ──
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-LLM_MODEL = "gpt-4o-mini"
+LLM_MODEL = os.getenv("LLM_MODEL", "gpt-4o-mini")
 
 # ── RAG ──
-EMBEDDING_MODEL = "text-embedding-3-small"
+EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "text-embedding-3-small")
 CHUNK_SIZE = 500
 CHUNK_OVERLAP = 50
 DENSE_K = 10          # 粗排：向量检索 Top-K
